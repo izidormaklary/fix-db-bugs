@@ -23,14 +23,14 @@ function openConnection(): PDO
 $pdo = openConnection();
 
 if (!empty($_POST['firstname']) && !empty($_POST['lastname'])) {
-    //@(todo possible bug below?) DONE:
-    var_dump($_POST['id']);
+    //@todo possible bug below? DONE: table row needs to be created if no id is set
+
     if (empty($_POST['id'])) {
         $handle = $pdo->prepare('INSERT INTO user ( firstname, lastname, year) VALUES ( :firstname, :lastname, :year)');
         $message = 'Your record has been added';
     } else {
-        //@todo why does this not work?
-        $handle = $pdo->prepare(' UPDATE user SET (firstname = :firstname, lastname = :lastname, u.year = :year) WHERE id = :id ');
+        //@todo why does this not work? DONE: wrongly formatted query, UPDATE not VALUES but SET
+        $handle = $pdo->prepare(' UPDATE user SET firstname = :firstname, lastname = :lastname, year = :year WHERE id = :id ');
         $handle->bindValue(':id', $_POST['id']);
         $message = 'Your record has been updated';
     }
@@ -38,29 +38,29 @@ if (!empty($_POST['firstname']) && !empty($_POST['lastname'])) {
     $handle->bindValue(':firstname', $_POST['firstname']);
     $handle->bindValue(':lastname', $_POST['lastname']);
     $handle->bindValue(':year', (date('Y')));
-var_dump($handle);
-
-
+    $handle->execute();
     if (!empty($_POST['id'])) {
         $handle = $pdo->prepare('DELETE FROM sport WHERE user_id = :id');
         $handle->bindValue(':id', $_POST['id']);
         $handle->execute();
         $userId = $_POST['id'];
     } else {
-        $handle->execute();
-        //why did I leave this if empty? There must be no important reason for this. Move on.
+        //todo ?why did I leave this if empty? There must be no important reason for this. Move on.
+        //DONE: userId can be get from the last row from user table
+        $userId =$pdo->lastInsertId();
     }
 
-    //@todo Why does this loop not work? If only I could see the bigger picture.
+    //@todo Why does this loop not work? If only I could see the bigger picture. DONE: userID variable was in the wrong place.
     foreach ($_POST['sports'] as $sport) {
-        $userId = $pdo->lastInsertId();
+
         $handle = $pdo->prepare('INSERT INTO sport (user_id, sport) VALUES (:userId, :sport)');
         $handle->bindValue(':userId', $userId);
         $handle->bindValue(':sport', $sport);
+        $handle->execute();
     }
-    $handle->execute();
+
 } elseif (isset($_POST['delete'])) {
-    //@todo BUG? Why does always delete all my users?
+    //@todo BUG? Why does always delete all my users? DONE: didnt match for user id.
     $handle = $pdo->prepare('DELETE FROM user WHERE id = :id');
     //The line below just gave me an error, probably not important. Annoying line.
     $handle->bindValue(':id', $_POST['id']);
@@ -69,7 +69,7 @@ var_dump($handle);
     $message = 'Your record has been deleted';
 }
 
-//@(todo Invalid query?) DONE
+//@todo Invalid query? DONE: separator in the wrong place in CONCAT_WS, wasnt defined from which table should the query get the id, also added aliases.
 
 $handle = $pdo->prepare('SELECT u.id, concat_ws(" ", firstname, lastname) AS name, sport FROM user u LEFT JOIN sport s ON u.id = s.user_id where year = :year order by s.user_id');
 $handle->bindValue(':year', date('Y'));
@@ -90,8 +90,9 @@ if (!empty($_GET['id'])) {
     $handle = $pdo->prepare('SELECT sport FROM sport where user_id = :id');
     $handle->bindValue(':id', $_GET['id']);
     $handle->execute();
+
     foreach ($handle->fetchAll() as $sport) {
-        $selectedUser['sports'][] = $sport;//@todo I just want an array of all sports of this, why is it not working?
+        $selectedUser['sports'][] = $sport["sport"];//@todo I just want an array of all sports of this, why is it not working?  DONE: fetchAll outputs a nested array.
     }
 }
 
