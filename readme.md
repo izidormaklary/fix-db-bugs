@@ -10,7 +10,7 @@
 - Ability to fix existing code with bugs related to a database.
 
 ## The Mission
-Your coach has probably helped you to fix some bugs in your code base during the training, and we think it is only fair to now return the favor.
+
 
 My coach wrote [a small script](resources/index.php) that manages users and their favorite sports.
 
